@@ -2,6 +2,9 @@ package storedcounter
 
 import (
 	"encoding/binary"
+	"log"
+	"os"
+	"strconv"
 	"sync"
 
 	"github.com/ipfs/go-datastore"
@@ -12,6 +15,18 @@ type StoredCounter struct {
 	lock sync.Mutex
 	ds   datastore.Datastore
 	name datastore.Key
+}
+
+var SectorInitNum uint64 = 0
+
+func init() {
+	if s := os.Getenv("SECTOR_INIT_NUM"); s != "" {
+		sim, err := strconv.Atoi(s)
+		if err != nil {
+			log.Printf("failed to parse 'PARALLEL_NUM' env var: %s", err)
+		}
+		SectorInitNum = uint64(sim)
+	}
 }
 
 // New returns a new StoredCounter for the given datastore and key
@@ -30,7 +45,7 @@ func (sc *StoredCounter) Next() (uint64, error) {
 		return 0, err
 	}
 
-	var next uint64 = 0
+	next := SectorInitNum
 	if has {
 		curBytes, err := sc.ds.Get(sc.name)
 		if err != nil {
